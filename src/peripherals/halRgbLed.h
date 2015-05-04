@@ -85,6 +85,5 @@ class HalRgbLed {
     SYS_Timer_t blinkTimer;
 };
 
-extern HalRgbLed Led;
 
 #endif // _PINOCCIO_HAL_RGB_LED_H

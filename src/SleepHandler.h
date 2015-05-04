@@ -1,7 +1,6 @@
 #ifndef LIB_PINOCCIO_SLEEP_H
 #define LIB_PINOCCIO_SLEEP_H
 
-#include "backpack-bus/Pbbe.h"
 #include "util/Duration.h"
 
 ISR(SCNT_OVFL_vect);
@@ -29,12 +28,6 @@ class SleepHandler {
     // If the previously scheduled end time has already passed, this
     // returns immediately, without sleeping.
     static void doSleep(bool interruptible);
-
-    static void setPinWakeup(uint8_t pin, bool enable);
-    static bool pinWakeupSupported(uint8_t pin);
-    static bool pinWakeupEnabled(uint8_t pin) {
-      return Pbbe::LogicalPin(pin).in(pinWakeups);
-    }
 
     // A timer tick is always 16μs, so the tick count overflows after
     // 2^32 * 16 / 1000 == 68,719,476 ms (±19 hours). ms should not be
@@ -81,9 +74,6 @@ class SleepHandler {
     static Duration lastOverflow;
     // The total time spent sleeping since startup
     static Duration totalSleep;
-
-    // Enable wakeups for changes on these pins
-    static Pbbe::LogicalPin::mask_t pinWakeups;
 
     // Allow the symbol counter overflow ISR to access our protected members
     friend void SCNT_OVFL_vect();

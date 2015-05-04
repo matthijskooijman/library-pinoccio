@@ -14,8 +14,6 @@
 
 static void halRgbLedBlinkTimerHandler(SYS_Timer_t *timer);
 
-HalRgbLed Led;
-
 HalRgbLed::HalRgbLed() {
   turnOff();
   enable();
@@ -27,7 +25,6 @@ HalRgbLed::HalRgbLed() {
   torchBlueValue = eeprom_read_byte((uint8_t *)8129);
 
   blinkTimer.interval = 500;
-  blinkTimer.handler = halRgbLedBlinkTimerHandler;
 
   ledEventHandler = 0;
 }
@@ -242,29 +239,7 @@ short HalRgbLed::getBlueTorchValue(void) {
 }
 
 void HalRgbLed::triggerEvent(void) {
-  if (Led.ledEventHandler != 0) {
-    if (Scout.eventVerboseOutput) {
-      Serial.print(F("Running: ledEventHandler("));
-      Serial.print(redValue);
-      Serial.print(F(","));
-      Serial.print(greenValue);
-      Serial.print(F(","));
-      Serial.print(blueValue);
-      Serial.println(F(")"));
-    }
-    Led.ledEventHandler(redValue, greenValue, blueValue);
-  }
-}
-
-static void halRgbLedBlinkTimerHandler(SYS_Timer_t *timer) {
-  if (timer->mode == SYS_TIMER_PERIODIC_MODE) {
-    if (Led.getRedValue() || Led.getGreenValue() || Led.getBlueValue()) {
-      Led.setColor(0, 0, 0);
-    } else {
-      Led.setLEDToBlinkValue();
-    }
-
-  } else {
-    Led.turnOff();
+  if (ledEventHandler != 0) {
+    ledEventHandler(redValue, greenValue, blueValue);
   }
 }

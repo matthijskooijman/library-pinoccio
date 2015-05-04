@@ -6,7 +6,6 @@
 static volatile bool timer_match;
 Duration SleepHandler::lastOverflow = {0, 0};
 Duration SleepHandler::totalSleep = {0, 0};
-Pbbe::LogicalPin::mask_t SleepHandler::pinWakeups = 0;
 
 ISR(SCNT_CMP3_vect) {
   timer_match = true;
@@ -189,50 +188,6 @@ void SleepHandler::doSleep(bool interruptible) {
   // Clear any pending PCINT0 flag
   PCIFR |= (1 << PCIF0);
 
-  // TODO: Replace this hardcoded list with something based on
-  // digitalPinToPCICR / digitalPinToInterrupt (after they've been
-  // fixed for pinoccio). The challenge there is to make the code not
-  // crazily slow by calling those macros for all possible pins in a
-  // loop.
-
-  // First, enable pins for the pin change interrupt. The interrupt
-  // itself was already enabled in setup().
-  if (Pbbe::LogicalPin(SS).in(pinWakeups))
-    PCMSK0 |= (1 << PCINT0);
-  if (Pbbe::LogicalPin(SCK).in(pinWakeups))
-    PCMSK0 |= (1 << PCINT1);
-  if (Pbbe::LogicalPin(MOSI).in(pinWakeups))
-    PCMSK0 |= (1 << PCINT2);
-  if (Pbbe::LogicalPin(MISO).in(pinWakeups))
-    PCMSK0 |= (1 << PCINT3);
-  // PCINT4/5/6 are the RGB led
-  if (Pbbe::LogicalPin(D2).in(pinWakeups))
-    PCMSK0 |= (1 << PCINT7);
-  // PCINT8 is RX0, PCINT9-23 are not connected on 256rfr2
-
-  // Then do the external interrupts. INT0-3 can detect edges during
-  // sleep, but INT4-7 can only detect low-level during sleep. This
-  // means that a low level on those pins will wake us from sleep
-  // immediately.
-  // We pass in NULL for the callback function, since we don't really
-  // care about the interrupt itself.
-  if (Pbbe::LogicalPin(SCL).in(pinWakeups))
-    attachInterrupt(2, NULL, CHANGE); // INT0
-  if (Pbbe::LogicalPin(SDA).in(pinWakeups))
-    attachInterrupt(3, NULL, CHANGE); // INT1
-  if (Pbbe::LogicalPin(RX1).in(pinWakeups))
-    attachInterrupt(4, NULL, CHANGE); // INT2
-  if (Pbbe::LogicalPin(TX1).in(pinWakeups))
-    attachInterrupt(5, NULL, CHANGE); // INT3
-  if (Pbbe::LogicalPin(D4).in(pinWakeups))
-    attachInterrupt(0, NULL, LOW); // INT4
-  if (Pbbe::LogicalPin(D5).in(pinWakeups))
-    attachInterrupt(1, NULL, LOW); // INT5
-  if (Pbbe::LogicalPin(D7).in(pinWakeups))
-    attachInterrupt(6, NULL, LOW); // INT6
-  if (Pbbe::LogicalPin(BATT_ALERT).in(pinWakeups))
-    attachInterrupt(7, NULL, LOW); // INT7
-
   // Check to see if we haven't passed the until time yet. Due to
   // wraparound, we convert to an integer, but this effectively halves
   // the maximum sleep duration (if until is > 2^31 from from now, it'll
@@ -269,28 +224,3 @@ void SleepHandler::doSleep(bool interruptible) {
   while (!(ADCSRB & (1 << AVDDOK))) /* nothing */;
 }
 
-void SleepHandler::setPinWakeup(uint8_t pin, bool enable) {
-  if (enable)
-    pinWakeups |= Pbbe::LogicalPin(pin).mask();
-  else
-    pinWakeups &= ~Pbbe::LogicalPin(pin).mask();
-}
-
-bool SleepHandler::pinWakeupSupported(uint8_t pin) {
-  Pbbe::LogicalPin::mask_t supported =
-    Pbbe::LogicalPin(D2).mask() |
-    Pbbe::LogicalPin(D4).mask() |
-    Pbbe::LogicalPin(D5).mask() |
-    Pbbe::LogicalPin(D7).mask() |
-    Pbbe::LogicalPin(BATT_ALERT).mask() |
-    Pbbe::LogicalPin(SS).mask() |
-    Pbbe::LogicalPin(MOSI).mask() |
-    Pbbe::LogicalPin(MISO).mask() |
-    Pbbe::LogicalPin(SCK).mask() |
-    Pbbe::LogicalPin(TX1).mask() |
-    Pbbe::LogicalPin(RX1).mask() |
-    Pbbe::LogicalPin(SDA).mask() |
-    Pbbe::LogicalPin(SCL).mask();
-
-  return Pbbe::LogicalPin(pin).in(supported);
-}

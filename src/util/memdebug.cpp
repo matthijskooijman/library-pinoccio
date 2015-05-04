@@ -40,7 +40,6 @@
 #include <stdio.h>
 #include <avr/io.h>
 #include "memdebug.h"
-#include <src/bitlash.h>
 
 /**
  * This must match the definition in "stdlib_private.h"
@@ -195,6 +194,6 @@ int showMemory(void) {
       largeMem
     );
 
-  speol(buffer);
+  Serial.write(buffer);
   return freeMem;
 }
