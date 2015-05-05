@@ -23,8 +23,7 @@ Scout::Scout() {
   isFactoryResetReady = false;
 }
 
-void Scout::setup() {
-
+void Scout::setup(bool hasBridge) {
   settings.setup();
 
   Wire.begin();
@@ -39,12 +38,40 @@ void Scout::setup() {
   backpack.setup();
   sleep.setup();
 
+  if (hasBridge) {
+    // if we have a bridge, we need to prepare our sink
+    bridge.setup(mesh);
+  }
+
   led.turnOff();
 }
 
 void Scout::loop() {
   mesh.loop();
   sleep.loop();
+}
+
+void Scout::report(const char *type, cn_cbor *data) {
+  // Wrap the data into a report CBOR array:
+  // 0:<type> 1:<timestamp> 2:data
+  cn_cbor *wrapper;
+  cn_cbor *typeCb;
+  cn_cbor *timeCb;
+
+  cn_cbor_errback err;
+  wrapper = cn_cbor_array_create(NULL);
+  typeCb = cn_cbor_data_create((uint8_t*)type, sizeof(type), NULL);
+  timeCb = cn_cbor_int_create(millis(), NULL);
+
+  cn_cbor_array_append(wrapper, typeCb, NULL);
+  cn_cbor_array_append(wrapper, timeCb, NULL);
+  cn_cbor_array_append(wrapper, data, NULL);
+
+  mesh.multicast(REPORT_GROUP, REPORT_ENDPOINT, REPORT_ENDPOINT, wrapper);
+
+  if (bridge.available) {
+    // TODO: also sink it to the bridge?
+  }
 }
 
 void Scout::reboot() {

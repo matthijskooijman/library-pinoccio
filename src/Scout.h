@@ -11,21 +11,35 @@
 
 #include <Backpack.h>
 #include <Battery.h>
+#include <Bridge.h>
 #include <Mesh.h>
 #include <Settings.h>
 #include <Sleep.h>
 #include <Wire.h>
+
+#include <cbor.h>
+#include "cn-cbor/cn-cbor.h"
 
 #include "peripherals/halRgbLed.h"
 
 namespace pinoccio {
 
 class Scout {
-
   public:
+    static const uint16_t REPORT_GROUP = 0xCFEE;
+    static const uint8_t REPORT_ENDPOINT = 0x01;
+
     Scout();
 
-    void setup();
+    Settings settings;
+    Battery battery;
+    Backpack backpack;
+    HalRgbLed led;
+    Mesh mesh;
+    Sleep sleep;
+    Bridge bridge;
+
+    void setup(bool hasBridge = false);
     void loop();
 
     bool factoryReset();
@@ -34,17 +48,10 @@ class Scout {
     const char* getLastResetCause();
     int8_t getTemperature();
 
-    Settings settings;
-    Battery battery;
-    Backpack backpack;
-    HalRgbLed led;
-    Mesh mesh;
-    Sleep sleep;
+    void report(const char *type, cn_cbor *data);
 
   protected:
-
     bool isFactoryResetReady;
-
     uint8_t lastResetCause;
 };
 

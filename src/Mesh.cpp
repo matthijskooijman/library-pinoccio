@@ -98,7 +98,7 @@ static bool dataReqRecv(NWK_DataInd_t *ind) {
   listenPoints[ind->dstEndpoint](ind->srcAddr, ind->srcEndpoint, cb);
 }
 
-void Mesh::send(uint16_t address, uint8_t srcEndpoint, uint8_t dstEndpoint, cn_cbor* data) {
+void Mesh::send(uint16_t address, uint8_t srcEndpoint, uint8_t dstEndpoint, cn_cbor* data, bool multicast) {
   // TODO overflow?
   uint8_t buffer[NWK_FRAME_MAX_PAYLOAD_SIZE];
   size_t length = cbor_encoder_write(buffer, 0, sizeof(buffer), data);
@@ -107,6 +107,9 @@ void Mesh::send(uint16_t address, uint8_t srcEndpoint, uint8_t dstEndpoint, cn_c
   dataReq.dstEndpoint = dstEndpoint;
   dataReq.srcEndpoint = srcEndpoint;
   dataReq.options = NWK_OPT_ENABLE_SECURITY;
+  if (multicast) {
+      dataReq.options |= NWK_OPT_MULTICAST;
+  }
   dataReq.data = buffer;
   dataReq.size = length;
   dataReq.confirm = dataReqConfirm;
@@ -114,11 +117,15 @@ void Mesh::send(uint16_t address, uint8_t srcEndpoint, uint8_t dstEndpoint, cn_c
   NWK_DataReq(&dataReq);
 }
 
+void Mesh::multicast(uint16_t groupAddress, uint8_t srcEndpoint, uint8_t dstEndpoint, cn_cbor* data) {
+  send(groupAddress, srcEndpoint, dstEndpoint, data, true);
+}
+
 static void dataReqConfirm(NWK_DataReq_t *req) {
   if (req->status == NWK_SUCCESS_STATUS) {
-
   } else {
     // Retry?
+    Serial.println("ERROR");
   }
 }
 
