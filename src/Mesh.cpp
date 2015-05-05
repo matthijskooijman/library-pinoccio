@@ -18,8 +18,12 @@ void Mesh::setup(Settings settings) {
   SYS_Init();
   PHY_RandomReq();
 
-  // TODO: interacting with settings isn't very nice, maybe just use eeprom here as well?
-  setSecurityKey(settings.getSecurityKey());
+  // Fetch radio settings from eeprom and set them
+  uint8_t buffer[16];
+  settings.getSecurityKey((uint8_t*)buffer);
+  setSecurityKey(buffer);
+  memset(buffer, 0x00, 16); // clear the memory again
+
   setRadio(settings.getAddress(), settings.getPanId(), settings.getRadioChannel());
   setPower(settings.getRadioPower());
   setDataRate(settings.getRadioDataRate());

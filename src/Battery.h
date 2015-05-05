@@ -1,8 +1,6 @@
 #ifndef SCOUT_BATTERY_H_
 #define SCOUT_BATTERY_H_
 
-#include "peripherals/halFuelGauge.h"
-
 namespace pinoccio {
     class Battery {
         public:

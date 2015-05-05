@@ -11,8 +11,9 @@
 
 #include <Backpack.h>
 #include <Battery.h>
-#include <Settings.h>
 #include <Mesh.h>
+#include <Settings.h>
+#include <Sleep.h>
 #include <Wire.h>
 
 #include "peripherals/halRgbLed.h"
@@ -23,7 +24,6 @@ class Scout {
 
   public:
     Scout();
-    ~Scout();
 
     void setup();
     void loop();
@@ -39,25 +39,11 @@ class Scout {
     Backpack backpack;
     HalRgbLed led;
     Mesh mesh;
-
-    // Schedule a sleep that lasts until now + ms. The optional bitlash
-    // command is executed after the sleep. A previous sleep can be
-    // canceled by passing 0, NULL. The command passed in will be
-    // copied, so it does not have to remain valid.
-    void scheduleSleep(uint32_t ms, const char *cmd);
+    Sleep sleep;
 
   protected:
 
-    void doSleep(bool pastEnd);
-
-    bool isStateSaved;
     bool isFactoryResetReady;
-
-    bool sleepPending;
-    // The original sleep time, used to pass to the callback and to
-    // re-sleep. The actual sleep time for the next sleep is stored by
-    // SleepHandler instead.
-    uint32_t sleepMs;
 
     uint8_t lastResetCause;
 };

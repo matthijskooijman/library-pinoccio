@@ -1,8 +1,8 @@
 #ifndef SCOUT_MESH_H_
 #define SCOUT_MESH_H_
 
-#include <cbor.h>
 #include <Settings.h>
+#include <cbor.h>
 #include "lwm/nwk/nwk.h"
 #include "cn-cbor/cn-cbor.h"
 

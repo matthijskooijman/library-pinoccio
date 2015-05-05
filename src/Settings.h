@@ -13,7 +13,7 @@ namespace pinoccio {
             uint8_t getHwVersion();
             uint8_t getEEPROMVersion();
 
-            uint8_t* getSecurityKey();
+            void getSecurityKey(uint8_t *buffer);
             uint8_t getRadioPower();
             uint8_t getRadioDataRate();
             uint8_t getRadioChannel();

@@ -1,18 +1,38 @@
 #include <Arduino.h>
 #include <avr/sleep.h>
 #include <util/atomic.h>
-#include "SleepHandler.h"
+#include "Sleep.h"
+
+
+// TODO:
+// for now this is pretty broken, we need to
+// verify the check in `loop` and handle the
+// callback.
 
 static volatile bool timer_match;
-Duration SleepHandler::lastOverflow = {0, 0};
-Duration SleepHandler::totalSleep = {0, 0};
+static volatile bool mesh_timer_match;
+
+Duration Sleep::lastOverflow = {0, 0};
+Duration Sleep::totalSleep = {0, 0};
+Duration meshSleep = {0, 0};
+uint32_t meshSleepStart = 0;
+
+
+// Returns the time mesh slept since startup
+const Duration& Sleep::meshsleeptime() {
+  return meshSleep;
+}
 
 ISR(SCNT_CMP3_vect) {
   timer_match = true;
 }
 
+ISR(SCNT_CMP2_vect) {
+  mesh_timer_match = true;
+}
+
 ISR(SCNT_OVFL_vect) {
-  SleepHandler::lastOverflow += (1LL << 32) * SleepHandler::US_PER_TICK;
+  Sleep::lastOverflow += (1LL << 32) * Sleep::US_PER_TICK;
 }
 
 /* Do nothing, just meant to wake up the Scout. We would want to declare
@@ -21,7 +41,7 @@ ISR(SCNT_OVFL_vect) {
  * to the also weak __bad_interrupt). */
 EMPTY_INTERRUPT(PCINT0_vect);
 
-uint32_t SleepHandler::read_sccnt() {
+uint32_t Sleep::read_sccnt() {
   // Read LL first, that will freeze the other registers for reading
   uint32_t sccnt = SCCNTLL;
   sccnt |= (uint32_t)SCCNTLH << 8;
@@ -30,7 +50,7 @@ uint32_t SleepHandler::read_sccnt() {
   return sccnt;
 }
 
-uint32_t SleepHandler::read_scocr3() {
+uint32_t Sleep::read_scocr3() {
   // Read LL first, that will freeze the other registers for reading
   uint32_t sccnt = SCOCR3LL;
   sccnt |= (uint32_t)SCOCR3LH << 8;
@@ -39,7 +59,7 @@ uint32_t SleepHandler::read_scocr3() {
   return sccnt;
 }
 
-void SleepHandler::write_scocr3(uint32_t val) {
+void Sleep::write_scocr3(uint32_t val) {
   // Write LL last, that will update the entire register atomically
   SCOCR3HH = val >> 24;
   SCOCR3HL = val >> 16;
@@ -47,7 +67,17 @@ void SleepHandler::write_scocr3(uint32_t val) {
   SCOCR3LL = val;
 }
 
-void SleepHandler::setup() {
+void Sleep::write_scocr2(uint32_t val) {
+  // Write LL last, that will update the entire register atomically
+  SCOCR2HH = val >> 24;
+  SCOCR2HL = val >> 16;
+  SCOCR2LH = val >> 8;
+  SCOCR2LL = val;
+}
+
+void Sleep::setup() {
+  sleepPending = false;
+
   // Enable asynchronous mode for timer2. This is required to start the
   // 32kiHz crystal at all, so we can use it for the symbol counter. See
   // http://www.avrfreaks.net/index.php?name=PNphpBB2&file=viewtopic&t=142962
@@ -72,10 +102,28 @@ void SleepHandler::setup() {
   PCICR |= (1 << PCIE0);
 }
 
+void Sleep::loop() {
+  if (mesh_timer_match) {
+    uint32_t after = read_sccnt();
+    meshSleep += (uint64_t)(after - meshSleepStart) * US_PER_TICK;
+    NWK_WakeupReq();
+    mesh_timer_match = false;
+  }
+
+  if (sleepPending) {
+    sleepPending = false;
+    if (scheduledTicksLeft() != 0) {
+      doSleep(false);
+    } else {
+      // TODO: callback?
+    }
+  }
+}
+
 // Sleep until the timer match interrupt fired. If interruptible is
 // true, this can return before if some other interrupt wakes us up
 // from sleep. If this happens, true is returned.
-bool SleepHandler::sleepUntilMatch(bool interruptible) {
+bool Sleep::sleepUntilMatch(bool interruptible) {
   while (true) {
     #ifdef sleep_bod_disable
     // On 256rfr2, BOD is automatically disabled in deep sleep, but
@@ -113,7 +161,9 @@ bool SleepHandler::sleepUntilMatch(bool interruptible) {
   }
 }
 
-void SleepHandler::scheduleSleep(uint32_t ms) {
+void Sleep::scheduleSleep(uint32_t ms, void (*callback)(uint32_t elapsed)) {
+  sleepPending = true; // we want to sleep
+
   uint32_t ticks = msToTicks(ms);
   // Make sure we cannot "miss" the compare match if a low timeout is
   // passed (really only ms = 0, which is forbidden, but handle it
@@ -131,7 +181,7 @@ void SleepHandler::scheduleSleep(uint32_t ms) {
   }
 }
 
-uint32_t SleepHandler::scheduledTicksLeft() {
+uint32_t Sleep::scheduledTicksLeft() {
   uint32_t left = read_scocr3() - read_sccnt();
 
   // If a compare match has occured, we're past the end of sleep already.
@@ -146,7 +196,38 @@ uint32_t SleepHandler::scheduledTicksLeft() {
   return left;
 }
 
-void SleepHandler::doSleep(bool interruptible) {
+// TODO take a few ticks off the schedule as it takes us some amount of
+// time to service the interrupt, mark the flag, get around to the loop
+// and wake the radio
+void Sleep::sleepRadio(uint32_t ms) {
+
+  uint32_t ticks = msToTicks(ms);
+
+  // Make sure we cannot "miss" the compare match if a low timeout is
+  // passed (really only ms = 0, which is forbidden, but handle it
+  // anyway).
+  if (ticks < 2) ticks = 2;
+  // Disable interrupts to prevent the counter passing the target before
+  // we clear the IRQSCP3 flag (due to other interrupts happening)
+  ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+    // Schedule SCNT_CMP2 when the given counter is reached
+    write_scocr2(read_sccnt() + ticks);
+
+    // Clear any previously pending interrupt
+    SCIRQS = (1 << IRQSCP2);
+
+    // Enable the SCNT_CMP2 interrupt to wake us from sleep
+    SCIRQM |= (1 << IRQMCP2);
+  }
+
+  meshSleepStart = read_sccnt();
+
+  while (NWK_Busy()) {}
+
+  NWK_SleepReq();
+}
+
+void Sleep::doSleep(bool interruptible) {
   // Disable Analag comparator
   uint8_t acsr = ACSR;
   ACSR = (1 << ACD);

@@ -2,12 +2,20 @@
 #define LIB_PINOCCIO_SLEEP_H
 
 #include "util/Duration.h"
+#include "lwm/nwk/nwk.h"
 
 ISR(SCNT_OVFL_vect);
 
-class SleepHandler {
+class Sleep {
   public:
-    static void setup();
+
+    void setup();
+    void loop();
+
+    bool sleepPending;
+
+    const Duration& meshsleeptime();
+    void sleepRadio(uint32_t ms);
 
     // Schedule a sleep until the given number of ms from now. The sleep
     // actually starts when doSleep is called, but any delay between
@@ -16,10 +24,10 @@ class SleepHandler {
     //
     // ms can not be 0, or more than 2^32 * 16 / 1000 ms (±19 hours), due to
     // the limited range of the counter used.
-    static void scheduleSleep(uint32_t ms);
+    void scheduleSleep(uint32_t ms, void (*callback)(uint32_t elapsed));
 
     // How many ticks are left before the end time is reached?
-    static uint32_t scheduledTicksLeft();
+    uint32_t scheduledTicksLeft();
 
     // Sleep until the previously scheduled time. If interruptible is
     // true, this can return earlier if we are woken from sleep by
@@ -27,7 +35,7 @@ class SleepHandler {
     //
     // If the previously scheduled end time has already passed, this
     // returns immediately, without sleeping.
-    static void doSleep(bool interruptible);
+    void doSleep(bool interruptible);
 
     // A timer tick is always 16μs, so the tick count overflows after
     // 2^32 * 16 / 1000 == 68,719,476 ms (±19 hours). ms should not be
@@ -46,12 +54,12 @@ class SleepHandler {
     static const uint32_t MAX_SLEEP_TICKS = (1 << 31);
 
     // Returns the number of ticks since startup
-    static uint32_t ticks() {
+    uint32_t ticks() {
       return read_sccnt();
     }
 
     // Returns the total time since startup
-    static Duration uptime() {
+    Duration uptime() {
       // Atomically read the lastOverflow value
       SCIRQM &= ~(1 << IRQMOF);
       Duration last = lastOverflow;
@@ -60,16 +68,21 @@ class SleepHandler {
     }
 
     // Returns the time slept since startup
-    static const Duration& sleeptime() {
+    const Duration& sleeptime() {
       return totalSleep;
     }
 
     // Returns the time awake since startup
-    static Duration waketime() {
+    Duration waketime() {
       return uptime() - totalSleep;
     }
 
   protected:
+
+    // The total time radio spent sleeping since startup
+    Duration meshSleep;
+    uint32_t meshSleepStart;
+
     // The time from startup to the most recent overflow
     static Duration lastOverflow;
     // The total time spent sleeping since startup
@@ -78,10 +91,11 @@ class SleepHandler {
     // Allow the symbol counter overflow ISR to access our protected members
     friend void SCNT_OVFL_vect();
 
-    static bool sleepUntilMatch(bool interruptible);
-    static uint32_t read_sccnt();
-    static void write_scocr3(uint32_t val);
-    static uint32_t read_scocr3();
+    bool sleepUntilMatch(bool interruptible);
+    uint32_t read_sccnt();
+    void write_scocr3(uint32_t val);
+    void write_scocr2(uint32_t val);
+    uint32_t read_scocr3();
 
     // The symbol counter always runs at 62.5kHz (period 16μs). When running
     // off the 16Mhz crystal, this is just a prescaler. When running of the

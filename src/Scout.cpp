@@ -6,12 +6,12 @@
 *  This program is free software; you can redistribute it and/or modify it *
 *  under the terms of the BSD License as described in license.txt.         *
 \**************************************************************************/
+
 #include <Arduino.h>
-#include <Wire.h>
-#include <Scout.h>
-#include "SleepHandler.h"
-#include <math.h>
 #include <avr/pgmspace.h>
+#include <Wire.h>
+
+#include <Scout.h>
 #include "peripherals/halTemperature.h"
 
 using namespace pinoccio;
@@ -19,91 +19,38 @@ using namespace pinoccio;
 Scout scout;
 
 Scout::Scout() {
+  lastResetCause = GPIOR0;
   isFactoryResetReady = false;
-  sleepPending = false;
 }
 
-Scout::~Scout() { }
-
 void Scout::setup() {
+
   settings.setup();
+
+  Wire.begin();
+  Serial.begin(115200);
 
   digitalWrite(SS, HIGH);
   pinMode(SS, OUTPUT);
   pinMode(VCC_ENABLE, OUTPUT);
 
-  Serial.begin(115200);
-
   mesh.setup(settings);
   battery.setup();
   backpack.setup();
-
-  SleepHandler::setup();
+  sleep.setup();
 
   led.turnOff();
-  Wire.begin();
 }
 
 void Scout::loop() {
-
   mesh.loop();
-
-  bool canSleep = true;
-  // TODO: Let other loop functions return some "cansleep" status as well
-
-
-  if (sleepPending) {
-    canSleep = canSleep && !NWK_Busy();
-
-    // if remaining <= 0, we won't actually sleep anymore, but still
-    // call doSleep to run the callback and clean up
-    if (SleepHandler::scheduledTicksLeft() == 0)
-      doSleep(true);
-    else if (canSleep)
-      doSleep(false);
-  }
-}
-
-bool Scout::factoryReset() {
-  if (!isFactoryResetReady) {
-    isFactoryResetReady = true;
-    return false;
-  } else {
-    return true;
-  }
+  sleep.loop();
 }
 
 void Scout::reboot() {
   cli();
   wdt_enable(WDTO_15MS);
   while(1);
-}
-
-void Scout::scheduleSleep(uint32_t ms, const char *func) {
-  // TODO: how are we going to do the callback?
-  if (ms) {
-    SleepHandler::scheduleSleep(ms);
-    sleepPending = true;
-  } else {
-    sleepPending = false;
-  }
-  sleepMs = ms;
-}
-
-void Scout::doSleep(bool pastEnd) {
-  // Copy the pointer, so the post command can set a new sleep
-  // timeout again.
-  sleepPending = false;
-
-  if (!pastEnd) {
-    NWK_SleepReq();
-
-    // TODO: suspend more stuff? Wait for UART byte completion?
-
-    SleepHandler::doSleep(true);
-    NWK_WakeupReq();
-  }
-
 }
 
 const char* Scout::getLastResetCause() {

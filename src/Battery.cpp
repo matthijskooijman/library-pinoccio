@@ -1,5 +1,7 @@
 #include <Battery.h>
 
+#include "peripherals/halFuelGauge.h"
+
 using namespace pinoccio;
 
 void Battery::setup() {

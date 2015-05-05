@@ -54,14 +54,10 @@ uint8_t Settings::getRadioDataRate() {
   return eeprom_read_byte((uint8_t *)8126);
 }
 
-uint8_t* Settings::getSecurityKey() {
-  byte buffer[16];
+void Settings::getSecurityKey(uint8_t* buffer) {
   for (int i=0; i<16; i++) {
     buffer[i] = eeprom_read_byte((uint8_t *)8162+i);
   }
-  delay(100); // WTF?
-  return (uint8_t *)buffer;
-// TODO: reinstate memset(buffer, 0x00, 16); ?
 }
 
 uint32_t Settings::getHwSerial() {
