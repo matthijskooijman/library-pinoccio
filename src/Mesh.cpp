@@ -121,11 +121,14 @@ void Mesh::multicast(uint16_t groupAddress, uint8_t srcEndpoint, uint8_t dstEndp
   send(groupAddress, srcEndpoint, dstEndpoint, data, true);
 }
 
+void Mesh::broadcast(uint8_t srcEndpoint, uint8_t dstEndpoint, cn_cbor* data) {
+  send(NWK_BROADCAST_PANID, srcEndpoint, dstEndpoint, data);
+}
+
 static void dataReqConfirm(NWK_DataReq_t *req) {
   if (req->status == NWK_SUCCESS_STATUS) {
   } else {
     // Retry?
-    Serial.println("ERROR");
   }
 }
 

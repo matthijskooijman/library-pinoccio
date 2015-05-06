@@ -23,6 +23,7 @@ namespace pinoccio {
             void listen(uint8_t endpoint, bool (*handler)(uint8_t srcAddress, uint8_t srcEndpoint, const cn_cbor *data));
             void send(uint16_t address, uint8_t srcEndpoint, uint8_t dstEndpoint, cn_cbor* data, bool multicast = false);
             void multicast(uint16_t address, uint8_t srcEndpoint, uint8_t dstEndpoint, cn_cbor* data);
+            void broadcast(uint8_t srcEndpoint, uint8_t dstEndpoint, cn_cbor* data);
 
             void join(uint16_t groupAddress);
             void leave(uint16_t groupAddress);

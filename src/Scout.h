@@ -11,8 +11,8 @@
 
 #include <Backpack.h>
 #include <Battery.h>
-#include <Bridge.h>
 #include <Mesh.h>
+#include <Modules.h>
 #include <Settings.h>
 #include <Sleep.h>
 #include <Wire.h>
@@ -26,7 +26,6 @@ namespace pinoccio {
 
 class Scout {
   public:
-    static const uint16_t REPORT_GROUP = 0xCFEE;
     static const uint8_t REPORT_ENDPOINT = 0x01;
 
     Scout();
@@ -37,9 +36,9 @@ class Scout {
     HalRgbLed led;
     Mesh mesh;
     Sleep sleep;
-    Bridge bridge;
+    Modules modules;
 
-    void setup(bool hasBridge = false);
+    void setup();
     void loop();
 
     bool factoryReset();
@@ -50,11 +49,12 @@ class Scout {
 
     void report(const char *type, cn_cbor *data);
 
+    static bool handleCommand(uint8_t srcAddress, uint8_t srcEndpoint, const cn_cbor *data);
+
   protected:
     bool isFactoryResetReady;
     uint8_t lastResetCause;
 };
-
 }
 
 extern pinoccio::Scout scout;
