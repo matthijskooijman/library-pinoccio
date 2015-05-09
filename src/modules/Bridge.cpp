@@ -9,7 +9,7 @@ using namespace pinoccio;
 Bridge bridge;
 
 void Bridge::setup(Scout *scout) {
-    scout->mesh.listen(Scout::REPORT_ENDPOINT, handleReport);
+    scout->mesh.listen(REPORT_ENDPOINT, handleReport);
 }
 
 void Bridge::loop() {

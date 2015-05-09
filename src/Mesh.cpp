@@ -92,10 +92,16 @@ void Mesh::listen(uint8_t endpoint, bool (*handler)(uint8_t srcAddress, uint8_t 
 }
 
 static bool dataReqRecv(NWK_DataInd_t *ind) {
-  const cn_cbor *cb;
-  cn_cbor_errback err;
-  cb = cn_cbor_decode(ind->data, ind->size, &err);
-  listenPoints[ind->dstEndpoint](ind->srcAddr, ind->srcEndpoint, cb);
+  if (listenPoints[ind->dstEndpoint] != NULL) {
+      const cn_cbor *cb;
+      cn_cbor_errback err;
+      cb = cn_cbor_decode(ind->data, ind->size, &err);
+
+      listenPoints[ind->dstEndpoint](ind->srcAddr, ind->srcEndpoint, cb);
+
+      // Assume the receivers are done with it.
+      cn_cbor_free(cb);
+  }
 }
 
 void Mesh::send(uint16_t address, uint8_t srcEndpoint, uint8_t dstEndpoint, cn_cbor* data, bool multicast) {
@@ -129,6 +135,7 @@ static void dataReqConfirm(NWK_DataReq_t *req) {
   if (req->status == NWK_SUCCESS_STATUS) {
   } else {
     // Retry?
+    Serial.println("ERR");
   }
 }
 

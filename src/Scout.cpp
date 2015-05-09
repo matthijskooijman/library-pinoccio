@@ -38,8 +38,8 @@ void Scout::setup() {
   sleep.setup();
 
   mesh.setup(settings);
-  mesh.listen(2, handleCommand);
 
+  commands.setup();
   modules.setup(this);
 
   led.turnOff();
@@ -102,8 +102,15 @@ void Scout::report(const char *type, cn_cbor *data) {
   cn_cbor_array_append(wrapper, data, NULL);
 
   mesh.broadcast(REPORT_ENDPOINT, REPORT_ENDPOINT, wrapper);
+
+  // Clean up
+  cn_cbor_free(wrapper);
 }
 
-bool Scout::handleCommand(uint8_t srcAddress, uint8_t srcEndpoint, const cn_cbor *data) {
+bool Scout::addCommand(const char *name, void (*handler)(const cn_cbor *args)) {
+  commands.addCommand(name, handler);
+}
 
+void Scout::sendCommand(uint16_t address, const char *name, cn_cbor *args) {
+  commands.sendCommand(address, name, args);
 }

@@ -11,6 +11,7 @@
 
 #include <Backpack.h>
 #include <Battery.h>
+#include <Commands.h>
 #include <Mesh.h>
 #include <Modules.h>
 #include <Settings.h>
@@ -22,12 +23,12 @@
 
 #include "peripherals/halRgbLed.h"
 
+#define REPORT_ENDPOINT 1
+
 namespace pinoccio {
 
 class Scout {
   public:
-    static const uint8_t REPORT_ENDPOINT = 0x01;
-
     Scout();
 
     Settings settings;
@@ -37,6 +38,7 @@ class Scout {
     Mesh mesh;
     Sleep sleep;
     Modules modules;
+    Commands commands;
 
     void setup();
     void loop();
@@ -49,11 +51,13 @@ class Scout {
 
     void report(const char *type, cn_cbor *data);
 
-    static bool handleCommand(uint8_t srcAddress, uint8_t srcEndpoint, const cn_cbor *data);
+    bool addCommand(const char *name, void (*handler)(const cn_cbor *args));
+    void sendCommand(uint16_t address, const char *name, cn_cbor *args);
 
   protected:
     bool isFactoryResetReady;
     uint8_t lastResetCause;
+
 };
 }
 
