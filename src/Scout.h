@@ -51,7 +51,7 @@ class Scout {
 
     void report(const char *type, cn_cbor *data);
 
-    bool addCommand(const char *name, void (*handler)(const cn_cbor *args));
+    bool addCommand(const char *name, uint8_t (*handler)(const cn_cbor *args));
     void sendCommand(uint16_t address, const char *name, cn_cbor *args);
 
   protected:

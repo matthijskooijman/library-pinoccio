@@ -9,7 +9,10 @@
 #include <Arduino.h>
 #include <stddef.h>
 #include <util/crc16.h>
+#include <cbor.h>
+#include "cn-cbor/cn-cbor.h"
 #include "OtaModule.h"
+#include "../Bridge.h"
 #include "wibo.h"
 #include <lwm/phy/phy.h>
 #include <lwm/nwk/nwk.h>
@@ -335,7 +338,9 @@ static uint8_t send_exit(uint16_t dst) {
  * Bitlash commands
 \****************************/
 
-static uint8_t ping(uint16_t address) {
+static uint8_t ping(const cn_cbor *args) {
+  uint16_t address = (uint16_t) cn_cbor_mapget_string(args, "address")->v.uint;
+
   if (state != State::IDLE) {
 //    speol(F("Ota operation in progress?"));
 //    speol(F("FAIL"));
@@ -349,7 +354,10 @@ static uint8_t ping(uint16_t address) {
   return 1;
 }
 
-static uint8_t start(uint16_t address, bool dryrun) {
+static uint8_t start(const cn_cbor *args) {
+  uint16_t address = (uint16_t) cn_cbor_mapget_string(args, "address")->v.uint;
+  const cn_cbor* dryrunArg = cn_cbor_mapget_string(args, "dryrun");
+  bool dryrun =  (dryrunArg != NULL) ? (bool) dryrunArg->v.uint : false;
 
   if (state != State::IDLE) {
 //    speol(F("Ota operation in progress?"));
@@ -368,13 +376,19 @@ static uint8_t start(uint16_t address, bool dryrun) {
 
   state = State::START_PING;
   tx_tries = 0;
+
+  scout.led.turnOff();
 }
 
-static uint8_t block(uint32_t memaddr, uint16_t dataSize, uint8_t *data) {
+static uint8_t block(const cn_cbor *args) {
+  uint32_t memaddr = (uint32_t) cn_cbor_mapget_string(args, "memaddr")->v.uint;
+  uint16_t dataSize = (uint16_t) cn_cbor_mapget_string(args, "size")->v.uint;
+  uint8_t *data = (uint8_t*) cn_cbor_mapget_string(args, "data")->v.str;
 
   if (state != State::IDLE) {
 //    speol(F("Ota operation in progress?"));
 //    speol(F("FAIL"));
+    scout.led.red();
     return 0;
   }
 
@@ -398,6 +412,7 @@ static uint8_t block(uint32_t memaddr, uint16_t dataSize, uint8_t *data) {
   if (!block_data) {
 //    speol(F("Memory allocation failed"));
 //    speol(F("FAIL"));
+    scout.led.blue();
     return 0;
   }
 
@@ -420,7 +435,8 @@ static uint8_t block(uint32_t memaddr, uint16_t dataSize, uint8_t *data) {
   tx_tries = 0;
 }
 
-static uint8_t clone() {
+static uint8_t clone(const cn_cbor *args) {
+
   if (state != State::IDLE) {
 //    speol(F("Ota operation in progress?"));
 //    speol(F("FAIL"));
@@ -436,7 +452,7 @@ static uint8_t clone() {
   tx_tries = 0;
 }
 
-static uint8_t end() {
+static uint8_t end(const cn_cbor *args) {
   if (state != State::IDLE) {
 //    speol(F("Ota operation in progress?"));
 //    speol(F("FAIL"));
@@ -452,9 +468,15 @@ static uint8_t end() {
 \****************************/
 
 void OtaModule::setup(Scout *scout) {
+  scout->addCommand("ota.ping", ping);
+  scout->addCommand("ota.start", start);
+  scout->addCommand("ota.block", block);
+  scout->addCommand("ota.clone", clone);
+  scout->addCommand("ota.end", end);
 }
 
 void OtaModule::loop() {
+  cn_cbor *ack;
   switch (txstate) {
     case TxState::RETRY:
       if (millis() - txtime < RETRY_DELAY)
@@ -547,6 +569,11 @@ void OtaModule::loop() {
           txstate = TxState::IDLE;
 //          speol();
 //          speol("OK");
+
+          ack = cn_cbor_map_create(NULL);
+          cn_cbor_mapput_string(ack, "ota", cn_cbor_string_create("ack", NULL), NULL);
+          bridge.handleReport(target, 0, ack);
+          scout.led.blinkGreen();
           break;
         case State::BLOCK_ADDRESS:
           // Address sent, send first block of data
@@ -586,6 +613,10 @@ void OtaModule::loop() {
           txstate = TxState::IDLE;
 //          speol();
 //          speol("OK");
+          ack = cn_cbor_map_create(NULL);
+          cn_cbor_mapput_string(ack, "ota", cn_cbor_string_create("ack", NULL), NULL);
+          bridge.handleReport(target, 0, ack);
+          scout.led.blinkGreen();
           break;
       }
       break;
@@ -598,6 +629,7 @@ void OtaModule::loop() {
 }
 
 static void handle_ping_reply(p2p_ping_cnf_t *p) {
+  cn_cbor *ack;
   txstate = TxState::IDLE;
   switch (state) {
     case State::PINGREQ: {
@@ -627,6 +659,10 @@ static void handle_ping_reply(p2p_ping_cnf_t *p) {
           state = State::BLOCK_DONE;
 //          speol();
 //          speol(F("OK"));
+          ack = cn_cbor_map_create(NULL);
+          cn_cbor_mapput_string(ack, "ota", cn_cbor_string_create("ack", NULL), NULL);
+          bridge.handleReport(target, 0, ack);
+          scout.led.blinkGreen();
         } else {
           // ota.clone command, advance to the next block
           block_addr += block_size;
@@ -642,6 +678,10 @@ static void handle_ping_reply(p2p_ping_cnf_t *p) {
             state = State::IDLE;
 //            speol();
 //            speol(F("OK"));
+              ack = cn_cbor_map_create(NULL);
+              cn_cbor_mapput_string(ack, "ota", cn_cbor_string_create("ack", NULL), NULL);
+              bridge.handleReport(target, 0, ack);
+              scout.led.blinkGreen();
           }
         }
       } else {

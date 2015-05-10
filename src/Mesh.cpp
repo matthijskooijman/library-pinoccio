@@ -11,7 +11,7 @@ using namespace pinoccio;
 static NWK_DataReq_t dataReq;
 static void dataReqConfirm(NWK_DataReq_t *req);
 static bool dataReqRecv(NWK_DataInd_t *ind);
-static bool (*listenPoints[16])(uint8_t srcAddress, uint8_t srcEndpoint, const cn_cbor *data);
+static bool (*listenPoints[16])(uint16_t srcAddress, uint8_t srcEndpoint, const cn_cbor *data);
 
 void Mesh::setup(Settings settings) {
 
@@ -86,7 +86,7 @@ void Mesh::resetSecurityKey(void) {
   setSecurityKey(buf);
 }
 
-void Mesh::listen(uint8_t endpoint, bool (*handler)(uint8_t srcAddress, uint8_t srcEndpoint, const cn_cbor *data)) {
+void Mesh::listen(uint8_t endpoint, bool (*handler)(uint16_t srcAddress, uint8_t srcEndpoint, const cn_cbor *data)) {
   listenPoints[endpoint] = handler;
   NWK_OpenEndpoint(endpoint, dataReqRecv);
 }
@@ -97,10 +97,11 @@ static bool dataReqRecv(NWK_DataInd_t *ind) {
       cn_cbor_errback err;
       cb = cn_cbor_decode(ind->data, ind->size, &err);
 
-      listenPoints[ind->dstEndpoint](ind->srcAddr, ind->srcEndpoint, cb);
+      if (!listenPoints[ind->dstEndpoint](ind->srcAddr, ind->srcEndpoint, cb)) {
+          // Listen function has not freed the structures, so we will.
+          cn_cbor_free(cb);
+      }
 
-      // Assume the receivers are done with it.
-      cn_cbor_free(cb);
   }
 }
 

@@ -107,7 +107,7 @@ void Scout::report(const char *type, cn_cbor *data) {
   cn_cbor_free(wrapper);
 }
 
-bool Scout::addCommand(const char *name, void (*handler)(const cn_cbor *args)) {
+bool Scout::addCommand(const char *name, uint8_t (*handler)(const cn_cbor *args)) {
   commands.addCommand(name, handler);
 }
 

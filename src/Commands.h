@@ -12,7 +12,7 @@ namespace pinoccio {
         public:
             void setup();
 
-            bool addCommand(const char* name, void (*handler)(const cn_cbor *args));
+            bool addCommand(const char* name, uint8_t (*handler)(const cn_cbor *args));
             void sendCommand(uint16_t address, const char *command, cn_cbor *args);
     };
 }

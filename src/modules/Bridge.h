@@ -13,8 +13,7 @@ namespace pinoccio {
             void setup(Scout *scout);
             void loop();
 
-            static void write(const cn_cbor* data);
-            static bool handleReport(uint8_t srcAddress, uint8_t srcEndpoint, const cn_cbor *data);
+            static bool handleReport(uint16_t srcAddress, uint8_t srcEndpoint, const cn_cbor *data);
         private:
             using Module::Module;
     };
