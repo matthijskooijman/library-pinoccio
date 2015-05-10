@@ -9,7 +9,8 @@ using namespace pinoccio;
 
 Bridge bridge;
 String buffer;
-uint8_t messageLength = 0;
+uint16_t messageLength = 0;
+uint8_t messageBytes = 0;
 
 void Bridge::setup(Scout *scout) {
     scout->mesh.listen(REPORT_ENDPOINT, handleReport);
@@ -22,8 +23,12 @@ void Bridge::loop() {
         if (c < 0)
             return;
 
-        if (messageLength == 0) {
+        if (messageBytes ==0) {
             messageLength = c;
+            messageBytes++;
+        } else if (messageBytes == 1) {
+            messageLength += (c * 256);
+            messageBytes++;
         } else {
             buffer.concat((char)c);
         }
@@ -45,6 +50,7 @@ void Bridge::loop() {
             }
             buffer = "";
             messageLength = 0;
+            messageBytes = 0;
         }
     }
 }

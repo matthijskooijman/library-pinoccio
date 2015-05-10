@@ -383,7 +383,7 @@ static uint8_t start(const cn_cbor *args) {
 static uint8_t block(const cn_cbor *args) {
   uint32_t memaddr = (uint32_t) cn_cbor_mapget_string(args, "memaddr")->v.uint;
   uint16_t dataSize = (uint16_t) cn_cbor_mapget_string(args, "size")->v.uint;
-  uint8_t *data = (uint8_t*) cn_cbor_mapget_string(args, "data")->v.str;
+  const char *data = cn_cbor_mapget_string(args, "data")->v.str;
 
   if (state != State::IDLE) {
 //    speol(F("Ota operation in progress?"));
@@ -456,6 +456,7 @@ static uint8_t end(const cn_cbor *args) {
   if (state != State::IDLE) {
 //    speol(F("Ota operation in progress?"));
 //    speol(F("FAIL"));
+    scout.led.red();
     return 0;
   }
 
@@ -534,6 +535,7 @@ void OtaModule::loop() {
       if (!res) {
 //        speol();
 //        speol("FAIL");
+          scout.led.red();
         state = State::IDLE;
       }
       break;
@@ -555,6 +557,7 @@ void OtaModule::loop() {
 //            speol(F("No ping reply"));
             if (state == State::PINGREQ) {
               // Don't retry
+              scout.led.red();
               state = State::IDLE;
               txstate = TxState::IDLE;
             } else {
@@ -573,7 +576,6 @@ void OtaModule::loop() {
           ack = cn_cbor_map_create(NULL);
           cn_cbor_mapput_string(ack, "ota", cn_cbor_string_create("ack", NULL), NULL);
           bridge.handleReport(target, 0, ack);
-          scout.led.blinkGreen();
           break;
         case State::BLOCK_ADDRESS:
           // Address sent, send first block of data
@@ -616,7 +618,6 @@ void OtaModule::loop() {
           ack = cn_cbor_map_create(NULL);
           cn_cbor_mapput_string(ack, "ota", cn_cbor_string_create("ack", NULL), NULL);
           bridge.handleReport(target, 0, ack);
-          scout.led.blinkGreen();
           break;
       }
       break;
@@ -662,7 +663,6 @@ static void handle_ping_reply(p2p_ping_cnf_t *p) {
           ack = cn_cbor_map_create(NULL);
           cn_cbor_mapput_string(ack, "ota", cn_cbor_string_create("ack", NULL), NULL);
           bridge.handleReport(target, 0, ack);
-          scout.led.blinkGreen();
         } else {
           // ota.clone command, advance to the next block
           block_addr += block_size;
@@ -681,7 +681,6 @@ static void handle_ping_reply(p2p_ping_cnf_t *p) {
               ack = cn_cbor_map_create(NULL);
               cn_cbor_mapput_string(ack, "ota", cn_cbor_string_create("ack", NULL), NULL);
               bridge.handleReport(target, 0, ack);
-              scout.led.blinkGreen();
           }
         }
       } else {
@@ -690,6 +689,7 @@ static void handle_ping_reply(p2p_ping_cnf_t *p) {
         if (block_tries++ >= MAX_TRIES) {
 //          speol();
 //          speol(F("FAIL"));
+          scout.led.red();
           state = State::BLOCK_DONE;
         } else {
 //          speol(F("Retrying block"));
@@ -716,6 +716,7 @@ static void handle_tx_fail() {
   switch (state) {
     case State::IDLE: // Should not occur
     case State::BLOCK_DONE: // Should not occur
+          scout.led.red();
       break;
 
     case State::PINGREQ:
@@ -729,9 +730,11 @@ static void handle_tx_fail() {
       if (tx_tries++ < MAX_TRIES) {
         txstate = TxState::RETRY;
 //        speol(F("Retrying TX"));
+          scout.led.blinkBlue();
       } else {
 //        speol();
 //        speol(F("FAIL"));
+          scout.led.red();
         txstate = TxState::IDLE;
         switch (state) {
           case State::BLOCK_PING:
