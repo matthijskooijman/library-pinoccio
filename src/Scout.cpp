@@ -11,7 +11,7 @@
 #include <avr/pgmspace.h>
 #include <Wire.h>
 
-#include <Scout.h>
+#include "Scout.h"
 #include "peripherals/halTemperature.h"
 
 using namespace pinoccio;
@@ -23,7 +23,8 @@ Scout::Scout() {
   isFactoryResetReady = false;
 }
 
-void Scout::setup() {
+void Scout::setup(const char *name) {
+  this->name = name;
   settings.setup();
 
   Wire.begin();
@@ -105,12 +106,4 @@ void Scout::report(const char *type, cn_cbor *data) {
 
   // Clean up
   cn_cbor_free(wrapper);
-}
-
-bool Scout::addCommand(const char *name, uint8_t (*handler)(const cn_cbor *args)) {
-  commands.addCommand(name, handler);
-}
-
-void Scout::sendCommand(uint16_t address, const char *name, cn_cbor *args) {
-  commands.sendCommand(address, name, args);
 }

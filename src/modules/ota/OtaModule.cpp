@@ -338,7 +338,7 @@ static uint8_t send_exit(uint16_t dst) {
  * Bitlash commands
 \****************************/
 
-static uint8_t ping(const cn_cbor *args) {
+static cn_cbor* ping(const cn_cbor *args) {
   uint16_t address = (uint16_t) cn_cbor_mapget_string(args, "address")->v.uint;
 
   if (state != State::IDLE) {
@@ -351,10 +351,10 @@ static uint8_t ping(const cn_cbor *args) {
   state = State::PINGREQ;
   tx_tries = 0;
 
-  return 1;
+  return 0;
 }
 
-static uint8_t start(const cn_cbor *args) {
+static cn_cbor* start(const cn_cbor *args) {
   uint16_t address = (uint16_t) cn_cbor_mapget_string(args, "address")->v.uint;
   const cn_cbor* dryrunArg = cn_cbor_mapget_string(args, "dryrun");
   bool dryrun =  (dryrunArg != NULL) ? (bool) dryrunArg->v.uint : false;
@@ -380,7 +380,7 @@ static uint8_t start(const cn_cbor *args) {
   scout.led.turnOff();
 }
 
-static uint8_t block(const cn_cbor *args) {
+static cn_cbor* block(const cn_cbor *args) {
   uint32_t memaddr = (uint32_t) cn_cbor_mapget_string(args, "memaddr")->v.uint;
   uint16_t dataSize = (uint16_t) cn_cbor_mapget_string(args, "size")->v.uint;
   const char *data = cn_cbor_mapget_string(args, "data")->v.str;
@@ -435,7 +435,7 @@ static uint8_t block(const cn_cbor *args) {
   tx_tries = 0;
 }
 
-static uint8_t clone(const cn_cbor *args) {
+static cn_cbor* clone(const cn_cbor *args) {
 
   if (state != State::IDLE) {
 //    speol(F("Ota operation in progress?"));
@@ -452,7 +452,7 @@ static uint8_t clone(const cn_cbor *args) {
   tx_tries = 0;
 }
 
-static uint8_t end(const cn_cbor *args) {
+static cn_cbor* end(const cn_cbor *args) {
   if (state != State::IDLE) {
 //    speol(F("Ota operation in progress?"));
 //    speol(F("FAIL"));
@@ -469,11 +469,11 @@ static uint8_t end(const cn_cbor *args) {
 \****************************/
 
 void OtaModule::setup(Scout *scout) {
-  scout->addCommand("ota.ping", ping);
-  scout->addCommand("ota.start", start);
-  scout->addCommand("ota.block", block);
-  scout->addCommand("ota.clone", clone);
-  scout->addCommand("ota.end", end);
+  scout->commands.add("ota.ping", ping);
+  scout->commands.add("ota.start", start);
+  scout->commands.add("ota.block", block);
+  scout->commands.add("ota.clone", clone);
+  scout->commands.add("ota.end", end);
 }
 
 void OtaModule::loop() {

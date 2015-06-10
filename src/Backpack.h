@@ -1,7 +1,7 @@
 #ifndef SCOUT_BACKPACK_H_
 #define SCOUT_BACKPACK_H_
 
-#include "util/Callback.h"
+//#include "util/Callback.h"
 
 namespace pinoccio {
     class Backpack {
@@ -12,7 +12,7 @@ namespace pinoccio {
             void enableVcc();
             void disableVcc();
 
-            CallbackList<void, bool> toggleBackpackVccCallbacks;
+//            CallbackList<void, bool> toggleBackpackVccCallbacks;
         protected:
             bool vccEnabled;
     };

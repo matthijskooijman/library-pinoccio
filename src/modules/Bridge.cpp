@@ -16,6 +16,22 @@ void Bridge::setup(Scout *scout) {
     scout->mesh.listen(REPORT_ENDPOINT, handleReport);
 }
 
+void handleReply(uint16_t id, const cn_cbor *reply) {
+
+    cn_cbor *wrapper = cn_cbor_map_create(NULL);
+
+    cn_cbor_mapput_string(wrapper, "id", cn_cbor_int_create(id, NULL), NULL);
+    cn_cbor_mapput_string(wrapper, "data", (cn_cbor*)reply, NULL);
+
+    uint8_t buffer[NWK_FRAME_MAX_PAYLOAD_SIZE+32]; // add a few bytes for our wrapper
+    size_t length = cbor_encoder_write(buffer, 0, sizeof(buffer), wrapper);
+    Serial.write(buffer, length);
+    Serial.flush();
+
+    // Since we add a wrapper, we will free it.
+    cn_cbor_free(wrapper);
+}
+
 void Bridge::loop() {
     // See if we have commands on Serial
     while(true) {
@@ -40,13 +56,18 @@ void Bridge::loop() {
                 const cn_cbor *name = cn_cbor_mapget_string(message, "name");
                 const cn_cbor *address = cn_cbor_mapget_string(message, "address");
                 const cn_cbor *args = cn_cbor_mapget_string(message, "args");
+                const cn_cbor *id = cn_cbor_mapget_string(message, "id");
 
                 // Make a pretty C-string for CN_CBOR
                 char nameStr[name->length+1];
                 strncpy(nameStr, name->v.str, name->length);
                 nameStr[name->length] = '\0';
 
-                scout.sendCommand((uint16_t)address->v.uint, nameStr, (cn_cbor*)args);
+                if (id != NULL) {
+                    scout.commands.raw((uint16_t)address->v.uint, nameStr, (cn_cbor*)args, (uint16_t)id->v.uint, handleReply);
+                } else {
+                    scout.commands.send((uint16_t)address->v.uint, nameStr, (cn_cbor*)args);
+                }
             }
             buffer = "";
             messageLength = 0;

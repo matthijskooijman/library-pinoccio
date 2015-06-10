@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include <cbor.h>
 #include "cn-cbor/cn-cbor.h"
+#include "peripherals/halFuelGauge.h"
 
 #define COMMAND_ENDPOINT 2
 
@@ -12,8 +13,11 @@ namespace pinoccio {
         public:
             void setup();
 
-            bool addCommand(const char* name, uint8_t (*handler)(const cn_cbor *args));
-            void sendCommand(uint16_t address, const char *command, cn_cbor *args);
+            bool add(const char* name, cn_cbor* (*handler)(const cn_cbor *args));
+
+            void send(uint16_t address, const char *command, cn_cbor *args);
+            uint16_t query(uint16_t address, const char *command, cn_cbor *args, void (*callback)(uint16_t id, const cn_cbor *args));
+            uint16_t raw(uint16_t address, const char *command, cn_cbor *args, uint16_t id, void (*callback)(uint16_t id, const cn_cbor *args));
     };
 }
 

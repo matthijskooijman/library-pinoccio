@@ -40,7 +40,7 @@ class Scout {
     Modules modules;
     Commands commands;
 
-    void setup();
+    void setup(const char *name="Scout");
     void loop();
 
     bool factoryReset();
@@ -51,12 +51,10 @@ class Scout {
 
     void report(const char *type, cn_cbor *data);
 
-    bool addCommand(const char *name, uint8_t (*handler)(const cn_cbor *args));
-    void sendCommand(uint16_t address, const char *name, cn_cbor *args);
-
   protected:
     bool isFactoryResetReady;
     uint8_t lastResetCause;
+    const char* name;
 
 };
 }

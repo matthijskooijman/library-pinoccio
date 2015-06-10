@@ -16,6 +16,8 @@ Duration Sleep::lastOverflow = {0, 0};
 Duration Sleep::totalSleep = {0, 0};
 Duration meshSleep = {0, 0};
 uint32_t meshSleepStart = 0;
+void (*sleepCallback)(uint32_t elapsed);
+bool canSleep = false;
 
 
 // Returns the time mesh slept since startup
@@ -110,15 +112,46 @@ void Sleep::loop() {
     mesh_timer_match = false;
   }
 
+  canSleep = !NWK_Busy();
+
   if (sleepPending) {
-    sleepPending = false;
-    if (scheduledTicksLeft() != 0) {
-      doSleep(false);
-    } else {
-      // TODO: callback?
+    uint32_t left = scheduledTicksLeft();
+    if (left != 0 && canSleep) {
+      sleepPending = false;
+
+      NWK_SleepReq();
+      doSleep(true);
+      NWK_WakeupReq();
+
+      // Call the callback and clean up
+      sleepCallback(left);
+      sleepCallback = NULL;
     }
   }
 }
+
+void Sleep::scheduleSleep(uint32_t ms, void (*callback)(uint32_t elapsed)) {
+  sleepCallback = callback;
+
+  uint32_t ticks = msToTicks(ms);
+  // Make sure we cannot "miss" the compare match if a low timeout is
+  // passed (really only ms = 0, which is forbidden, but handle it
+  // anyway).
+  if (ticks < 2) ticks = 2;
+  // Disable interrupts to prevent the counter passing the target before
+  // we clear the IRQSCP3 flag (due to other interrupts happening)
+  ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+    // Schedule SCNT_CMP3 when the given counter is reached
+    write_scocr3(read_sccnt() + ticks);
+
+    // Clear any previously pending interrupt
+    SCIRQS = (1 << IRQSCP3);
+    timer_match = false;
+  }
+
+  sleepPending = true; // we want to sleep
+}
+
 
 // Sleep until the timer match interrupt fired. If interruptible is
 // true, this can return before if some other interrupt wakes us up
@@ -158,26 +191,6 @@ bool Sleep::sleepUntilMatch(bool interruptible) {
       timer_match = true;
       return true;
     }
-  }
-}
-
-void Sleep::scheduleSleep(uint32_t ms, void (*callback)(uint32_t elapsed)) {
-  sleepPending = true; // we want to sleep
-
-  uint32_t ticks = msToTicks(ms);
-  // Make sure we cannot "miss" the compare match if a low timeout is
-  // passed (really only ms = 0, which is forbidden, but handle it
-  // anyway).
-  if (ticks < 2) ticks = 2;
-  // Disable interrupts to prevent the counter passing the target before
-  // we clear the IRQSCP3 flag (due to other interrupts happening)
-  ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-    // Schedule SCNT_CMP3 when the given counter is reached
-    write_scocr3(read_sccnt() + ticks);
-
-    // Clear any previously pending interrupt
-    SCIRQS = (1 << IRQSCP3);
-    timer_match = false;
   }
 }
 
@@ -228,7 +241,8 @@ void Sleep::sleepRadio(uint32_t ms) {
 }
 
 void Sleep::doSleep(bool interruptible) {
-  // Disable Analag comparator
+
+  // Disable Analog comparator
   uint8_t acsr = ACSR;
   ACSR = (1 << ACD);
 
