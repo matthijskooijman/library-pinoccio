@@ -19,91 +19,66 @@ using namespace pinoccio;
 Scout scout;
 
 Scout::Scout() {
-  lastResetCause = GPIOR0;
-  isFactoryResetReady = false;
+    // Read last reset
+    lastResetCause = GPIOR0;
+    isFactoryResetReady = false;
 }
 
 void Scout::setup(const char *name) {
-  this->name = name;
-  settings.setup();
+    this->name = name;
+    settings.setup();
 
-  Wire.begin();
-  Serial.begin(115200);
+    Wire.begin();
+    Serial.begin(115200);
 
-  digitalWrite(SS, HIGH);
-  pinMode(SS, OUTPUT);
-  pinMode(VCC_ENABLE, OUTPUT);
+    digitalWrite(SS, HIGH);
+    pinMode(SS, OUTPUT);
+    pinMode(VCC_ENABLE, OUTPUT);
 
-  battery.setup();
-  backpack.setup();
-  sleep.setup();
+    battery.setup();
+    backpack.setup();
+    sleep.setup();
 
-  mesh.setup(settings);
+    mesh.setup(settings);
 
-  commands.setup();
-  modules.setup(this);
+    commands.setup();
+    modules.setup(this);
 
-  led.turnOff();
+    led.turnOff();
 }
 
 void Scout::loop() {
-  mesh.loop();
-  sleep.loop();
+    mesh.loop();
+    sleep.loop();
 
-  modules.loop();
+    modules.loop();
 }
 
 void Scout::reboot() {
-  cli();
-  wdt_enable(WDTO_15MS);
-  while(1);
+    cli();
+    wdt_enable(WDTO_15MS);
+    while (1);
 }
 
-const char* Scout::getLastResetCause() {
-  switch (lastResetCause) {
-      case 1:
-        return PSTR("Power-on");
-        break;
-      case 2:
-        return PSTR("External");
-        break;
-      case 4:
-        return PSTR("Brown-out");
-        break;
-      case 8:
-        return PSTR("Watchdog");
-        break;
-      case 16:
-        return PSTR("JTAG");
-        break;
-      default:
-        return PSTR("Unknown Cause Reset");
-  }
+const char *Scout::getLastResetCause() {
+    switch (lastResetCause) {
+        case 1:
+            return PSTR("Power-on");
+        case 2:
+            return PSTR("External");
+        case 4:
+            return PSTR("Brown-out");
+        case 8:
+            return PSTR("Watchdog");
+        case 16:
+            return PSTR("JTAG");
+        default:
+            return PSTR("Unknown Cause Reset");
+    }
 }
 
 int8_t Scout::getTemperature() {
-  // TODO external Aref check
-  return HAL_MeasureTemperature() + settings.getTemperatureOffset();
+    // TODO external Aref check
+    return HAL_MeasureTemperature() + settings.getTemperatureOffset();
 }
 
-void Scout::report(const char *type, cn_cbor *data) {
-  // Wrap the data into a report CBOR array:
-  // 0:<type> 1:<timestamp> 2:data
-  cn_cbor *wrapper;
-  cn_cbor *typeCb;
-  cn_cbor *timeCb;
-
-  cn_cbor_errback err;
-  wrapper = cn_cbor_array_create(NULL);
-  typeCb = cn_cbor_string_create(type, NULL);
-  timeCb = cn_cbor_int_create(millis(), NULL);
-
-  cn_cbor_array_append(wrapper, typeCb, NULL);
-  cn_cbor_array_append(wrapper, timeCb, NULL);
-  cn_cbor_array_append(wrapper, data, NULL);
-
-  mesh.broadcast(REPORT_ENDPOINT, REPORT_ENDPOINT, wrapper);
-
-  // Clean up
-  cn_cbor_free(wrapper);
-}

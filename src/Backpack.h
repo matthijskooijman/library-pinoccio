@@ -5,16 +5,18 @@
 
 namespace pinoccio {
     class Backpack {
-        public:
-            void setup();
+    public:
+        void setup();
 
-            bool isVccEnabled();
-            void enableVcc();
-            void disableVcc();
+        bool isVccEnabled();
+
+        void enableVcc();
+
+        void disableVcc();
 
 //            CallbackList<void, bool> toggleBackpackVccCallbacks;
-        protected:
-            bool vccEnabled;
+    protected:
+        bool vccEnabled;
     };
 }
 

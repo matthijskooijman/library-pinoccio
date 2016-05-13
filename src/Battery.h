@@ -3,15 +3,18 @@
 
 namespace pinoccio {
     class Battery {
-        public:
-            void setup();
+    public:
+        void setup();
 
-            bool isCharging();
-            bool isAlarmTriggered();
-            bool isConnected();
+        bool isCharging();
 
-            int getPercentage();
-            int getVoltage();
+        bool isAlarmTriggered();
+
+        bool isConnected();
+
+        int getPercentage();
+
+        int getVoltage();
     };
 }
 

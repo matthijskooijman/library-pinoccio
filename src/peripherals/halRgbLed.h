@@ -12,61 +12,96 @@
 #include "lwm/sys/sysTimer.h"
 
 class HalRgbLed {
-  public:
+public:
     HalRgbLed();
 
     void enable();
+
     void disable();
+
     bool isEnabled();
+
     void turnOff();
+
     bool isOff();
 
     void red();
+
     void green();
+
     void blue();
+
     void cyan();
+
     void purple();
-	void beccapurple();
+
+    void beccapurple();
+
     void magenta();
+
     void yellow();
+
     void orange();
+
     void white();
 
-    void blinkRed(unsigned int ms=500, bool continuous=false);
-    void blinkGreen(unsigned int ms=500, bool continuous=false);
-    void blinkBlue(unsigned int ms=500, bool continuous=false);
-    void blinkCyan(unsigned int ms=500, bool continuous=false);
-    void blinkPurple(unsigned int ms=500, bool continuous=false);
-    void blinkBeccaPurple(unsigned int ms=500, bool continuous=false);
-    void blinkMagenta(unsigned int ms=500, bool continuous=false);
-    void blinkYellow(unsigned int ms=500, bool continuous=false);
-    void blinkOrange(unsigned int ms=500, bool continuous=false);
-    void blinkWhite(unsigned int ms=500, bool continuous=false);
-    void blinkTorch(unsigned int ms=500, bool continuous=false);
-    void blinkColor(short red, short green, short blue, unsigned int ms=500, bool continuous=false);
+    void blinkRed(unsigned int ms = 500, bool continuous = false);
+
+    void blinkGreen(unsigned int ms = 500, bool continuous = false);
+
+    void blinkBlue(unsigned int ms = 500, bool continuous = false);
+
+    void blinkCyan(unsigned int ms = 500, bool continuous = false);
+
+    void blinkPurple(unsigned int ms = 500, bool continuous = false);
+
+    void blinkBeccaPurple(unsigned int ms = 500, bool continuous = false);
+
+    void blinkMagenta(unsigned int ms = 500, bool continuous = false);
+
+    void blinkYellow(unsigned int ms = 500, bool continuous = false);
+
+    void blinkOrange(unsigned int ms = 500, bool continuous = false);
+
+    void blinkWhite(unsigned int ms = 500, bool continuous = false);
+
+    void blinkTorch(unsigned int ms = 500, bool continuous = false);
+
+    void blinkColor(short red, short green, short blue, unsigned int ms = 500, bool continuous = false);
 
     int getRedValue();
+
     int getGreenValue();
+
     int getBlueValue();
 
     void setBlinkValues(short red, short green, short blue);
+
     void setLEDToBlinkValue();
+
     void setColor(short red, short green, short blue);
+
     void saveTorch(short red, short green, short blue);
+
     void setTorch(void);
 
     short getRedTorchValue(void);
+
     short getGreenTorchValue(void);
+
     short getBlueTorchValue(void);
 
     void triggerEvent();
+
     void (*ledEventHandler)(uint8_t redValue, uint8_t greenValue, uint8_t blueValue);
 
-    void setRedValue(int value, bool save=true);
-    void setGreenValue(int value, bool save=true);
-    void setBlueValue(int value, bool save=true);
+    void setRedValue(int value, bool save = true);
 
-  protected:
+    void setGreenValue(int value, bool save = true);
+
+    void setBlueValue(int value, bool save = true);
+
+protected:
 
     bool enabled;
 

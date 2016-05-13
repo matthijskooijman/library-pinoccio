@@ -14,34 +14,34 @@
 #include <Modules.h>
 
 namespace pinoccio {
-  class Module {
+    class Module {
     public:
-      Module() {
-        // Prepend ourselves to the list of modules
-        this->_next = Modules::_modules;
-        Modules::_modules = this;
-      }
+        Module() {
+            // Prepend ourselves to the list of modules
+            this->_next = Modules::_modules;
+            Modules::_modules = this;
+        }
 
-      /**
-       * Called on setup
-       */
-      virtual void setup(Scout *scout) = 0;
+        /**
+         * Called on setup
+         */
+        virtual void setup(Scout *scout) = 0;
 
-      /**
-       * Called on every loop
-       */
-      virtual void loop() = 0;
+        /**
+         * Called on every loop
+         */
+        virtual void loop() = 0;
 
-      /**
-       * Next element in the list of modules
-       */
-      Module* next() const { return _next; }
+        /**
+         * Next element in the list of modules
+         */
+        Module *next() const { return _next; }
 
     private:
-      Module* _next;
+        Module *_next;
 
-      // Let Modules update _enabled
-      friend class Modules;
-  };
+        // Let Modules update _enabled
+        friend class Modules;
+    };
 } // namespace pinoccio
 #endif

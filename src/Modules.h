@@ -11,31 +11,33 @@
 
 
 namespace pinoccio {
-  class Module;
-  class Scout;
+    class Module;
 
-  class Modules {
+    class Scout;
+
+    class Modules {
     public:
-      Modules();
+        Modules();
 
-      void setup(Scout *scout);
-      void loop();
+        void setup(Scout *scout);
 
-      /**
-       * Return the first module in the list of all modules. Subsequent
-       * modules can be iterated by calling the next() method on each
-       * module.
-       */
-      Module* modules() {
-        return _modules;
-      }
+        void loop();
+
+        /**
+         * Return the first module in the list of all modules. Subsequent
+         * modules can be iterated by calling the next() method on each
+         * module.
+         */
+        Module *modules() {
+            return _modules;
+        }
 
     protected:
-      static Module* _modules;
+        static Module *_modules;
 
-      // Let PinoccioModule update _modules to register itself
-      friend class Module;
-  };
+        // Let PinoccioModule update _modules to register itself
+        friend class Module;
+    };
 } // namespace pinoccio
 
 #endif

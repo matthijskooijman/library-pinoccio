@@ -9,13 +9,15 @@
 
 namespace pinoccio {
     class Bridge : public Module {
-        public:
-            void setup(Scout *scout);
-            void loop();
+    public:
+        void setup(Scout *scout);
 
-            static bool handleReport(uint16_t srcAddress, uint8_t srcEndpoint, const cn_cbor *data);
-        private:
-            using Module::Module;
+        void loop();
+
+        static bool handleReport(uint16_t srcAddress, uint8_t srcEndpoint, cn_cbor *data);
+
+    private:
+        using Module::Module;
     };
 }
 

@@ -7,15 +7,15 @@
 ISR(SCNT_OVFL_vect);
 
 class Sleep {
-  public:
+public:
 
     void setup();
+
     void loop();
 
     bool sleepPending;
 
-    const Duration& meshsleeptime();
-    void sleepRadio(uint32_t ms);
+    const Duration &meshsleeptime();
 
     // Schedule a sleep until the given number of ms from now. The sleep
     // actually starts when doSleep is called, but any delay between
@@ -41,13 +41,15 @@ class Sleep {
     // 2^32 * 16 / 1000 == 68,719,476 ms (±19 hours). ms should not be
     // bigger than that.
     static uint32_t msToTicks(uint32_t ms) {
-      return ms / US_PER_TICK * 1000 + ms % US_PER_TICK * 1000 / US_PER_TICK;
+        return ms / US_PER_TICK * 1000 + ms % US_PER_TICK * 1000 / US_PER_TICK;
     }
+
     static uint32_t usToTicks(uint32_t us) {
-      return us / US_PER_TICK;
+        return us / US_PER_TICK;
     }
+
     static uint32_t ticksToMs(uint32_t ticks) {
-      return ticks / 1000 * US_PER_TICK + ticks % 1000 * US_PER_TICK / 1000;
+        return ticks / 1000 * US_PER_TICK + ticks % 1000 * US_PER_TICK / 1000;
     }
 
     // Maximum time that a single sleep can last (±9.5 hours)
@@ -55,29 +57,29 @@ class Sleep {
 
     // Returns the number of ticks since startup
     uint32_t ticks() {
-      return read_sccnt();
+        return read_sccnt();
     }
 
     // Returns the total time since startup
     Duration uptime() {
-      // Atomically read the lastOverflow value
-      SCIRQM &= ~(1 << IRQMOF);
-      Duration last = lastOverflow;
-      SCIRQM |= (1 << IRQMOF);
-      return last + (uint64_t)read_sccnt() * US_PER_TICK;
+        // Atomically read the lastOverflow value
+        SCIRQM &= ~(1 << IRQMOF);
+        Duration last = lastOverflow;
+        SCIRQM |= (1 << IRQMOF);
+        return last + (uint64_t) read_sccnt() * US_PER_TICK;
     }
 
     // Returns the time slept since startup
-    const Duration& sleeptime() {
-      return totalSleep;
+    const Duration &sleeptime() {
+        return totalSleep;
     }
 
     // Returns the time awake since startup
     Duration waketime() {
-      return uptime() - totalSleep;
+        return uptime() - totalSleep;
     }
 
-  protected:
+protected:
 
     // The total time radio spent sleeping since startup
     Duration meshSleep;
@@ -92,9 +94,13 @@ class Sleep {
     friend void SCNT_OVFL_vect();
 
     bool sleepUntilMatch(bool interruptible);
+
     uint32_t read_sccnt();
+
     void write_scocr3(uint32_t val);
+
     void write_scocr2(uint32_t val);
+
     uint32_t read_scocr3();
 
     // The symbol counter always runs at 62.5kHz (period 16μs). When running
@@ -103,7 +109,7 @@ class Sleep {
     // average (which probably leads to a bit of jitter, but the long-term
     // average frequency should not be affected).
     static const uint16_t CLOCK = 62500;
-    static const uint8_t US_PER_TICK = (1000000/62500);
+    static const uint8_t US_PER_TICK = (1000000 / 62500);
     // TODO: Once C++11 is enabled, add a static_assert to check that
     // US_PER_TICK is integer
 };

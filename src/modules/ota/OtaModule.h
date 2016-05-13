@@ -13,21 +13,22 @@
 #include <Scout.h>
 
 namespace pinoccio {
-  class OtaModule : public Module {
+    class OtaModule : public Module {
 
     public:
-      void setup(Scout *scout);
-      void loop();
+        void setup(Scout *scout);
+
+        void loop();
 
     protected:
 
-    // Ensure there is always exactly one instance by declaring it here
-    // and making our constructor private
+        // Ensure there is always exactly one instance by declaring it here
+        // and making our constructor private
     private:
-      using Module::Module;
+        using Module::Module;
     public:
-      static OtaModule instance;
-  };
+        static OtaModule instance;
+    };
 } // namespace pinoccio
 
 #endif

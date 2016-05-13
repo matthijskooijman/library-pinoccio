@@ -23,40 +23,41 @@
 
 #include "peripherals/halRgbLed.h"
 
-#define REPORT_ENDPOINT 1
+#define SCOUT_EEPROM_BASE 8000
 
 namespace pinoccio {
 
-class Scout {
-  public:
-    Scout();
+    class Scout {
+    public:
+        Scout();
 
-    Settings settings;
-    Battery battery;
-    Backpack backpack;
-    HalRgbLed led;
-    Mesh mesh;
-    Sleep sleep;
-    Modules modules;
-    Commands commands;
+        Settings settings;
+        Battery battery;
+        Backpack backpack;
+        HalRgbLed led;
+        Mesh mesh;
+        Sleep sleep;
+        Modules modules;
+        Commands commands;
 
-    void setup(const char *name="Scout");
-    void loop();
+        void setup(const char *name = "Scout");
 
-    bool factoryReset();
-    void reboot();
+        void loop();
 
-    const char* getLastResetCause();
-    int8_t getTemperature();
+        bool factoryReset();
 
-    void report(const char *type, cn_cbor *data);
+        void reboot();
 
-  protected:
-    bool isFactoryResetReady;
-    uint8_t lastResetCause;
-    const char* name;
+        const char *getLastResetCause();
 
-};
+        int8_t getTemperature();
+
+    protected:
+        bool isFactoryResetReady;
+        uint8_t lastResetCause;
+        const char *name;
+
+    };
 }
 
 extern pinoccio::Scout scout;

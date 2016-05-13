@@ -13,24 +13,24 @@
 
 using namespace pinoccio;
 
-Module* Modules::_modules = NULL;
+Module *Modules::_modules = NULL;
 
 Modules::Modules() {
 }
 
 void Modules::setup(Scout *scout) {
-  Module *module = modules();
-  while (module) {
-    module->setup(scout);
-    module = module->next();
-  }
+    Module *module = modules();
+    while (module) {
+        module->setup(scout);
+        module = module->next();
+    }
 }
 
 void Modules::loop() {
-  Module *module = modules();
-  while (module) {
-    module->loop();
-    module = module->next();
-  }
+    Module *module = modules();
+    while (module) {
+        module->loop();
+        module = module->next();
+    }
 }
 

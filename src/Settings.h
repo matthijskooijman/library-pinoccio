@@ -5,28 +5,37 @@
 
 namespace pinoccio {
     class Settings {
-        public:
-            void setup();
+    public:
+        void setup();
 
-            uint32_t getHwSerial();
-            uint16_t getHwFamily();
-            uint8_t getHwVersion();
-            uint8_t getEEPROMVersion();
+        uint32_t getHwSerial();
 
-            void getSecurityKey(uint8_t *buffer);
-            uint8_t getRadioPower();
-            uint8_t getRadioDataRate();
-            uint8_t getRadioChannel();
-            uint16_t getAddress();
-            uint16_t getPanId();
+        uint16_t getHwFamily();
 
-            int8_t getTemperatureOffset(void);
-            void setTemperatureOffset(int8_t offset);
+        uint8_t getHwVersion();
 
-            void setOTAFlag();
+        uint8_t getEEPROMVersion();
 
-        protected:
-            int8_t tempOffset;
+        void getSecurityKey(uint8_t *buffer);
+
+        uint8_t getRadioPower();
+
+        uint8_t getRadioDataRate();
+
+        uint8_t getRadioChannel();
+
+        uint16_t getAddress();
+
+        uint16_t getPanId();
+
+        int8_t getTemperatureOffset(void);
+
+        void setTemperatureOffset(int8_t offset);
+
+        void setOTAFlag();
+
+    protected:
+        int8_t tempOffset;
     };
 }
 #endif
